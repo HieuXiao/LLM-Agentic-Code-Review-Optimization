@@ -1,7 +1,7 @@
-# \ca_nhan_2\agents\workflow.py
+# backend\app\agents\workflow.py
 
-from agents.agent_review import ReviewAgent
-from agents.agent_repair import RepairAgent
+from app.agents.agent_review import ReviewAgent
+from app.agents.agent_repair import RepairAgent
 
 
 def run_code_review_workflow(code_input: str, language: str) -> tuple[list, str | None]:

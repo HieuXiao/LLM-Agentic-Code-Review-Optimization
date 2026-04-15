@@ -1,4 +1,4 @@
-# \ca_nhan_2\prompts\review_prompt.py
+# backend\app\prompts\review_prompt.py
 
 SYSTEM_INSTRUCTION_REVIEW = """
 You are a professional AI Code Reviewer. Your task is to analyze the provided source code and point out issues with errors, performance, security, and style.

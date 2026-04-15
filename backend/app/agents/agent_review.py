@@ -1,8 +1,8 @@
-# \ca_nhan_2\agents\agent_review.py
+# backend\app\agents\agent_review.py
 
 from google.genai import types
-from utils.config import GEMINI_CLIENT, Config
-from prompts.review_prompt import generate_review_prompt, SYSTEM_INSTRUCTION_REVIEW
+from app.utils.config import GEMINI_CLIENT, Config
+from app.prompts.review_prompt import generate_review_prompt, SYSTEM_INSTRUCTION_REVIEW
 import json
 
 

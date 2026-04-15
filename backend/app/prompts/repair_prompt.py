@@ -1,4 +1,4 @@
-# \ca_nhan_2\prompts\repair_prompt.py
+# backend\app\prompts\repair_prompt.py
 
 SYSTEM_INSTRUCTION_REPAIR = """
 You are an AI Code Repairer. Your task is to receive a piece of broken code and a description of the problem, then propose a code fix in the original language.

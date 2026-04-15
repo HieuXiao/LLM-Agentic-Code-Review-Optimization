@@ -1,8 +1,8 @@
-# ca_nhan_2\agents\agent_repair.py
+# backend\app\agents\agent_repair.py
 
 from google.genai import types
-from utils.config import GEMINI_CLIENT, Config
-from prompts.repair_prompt import generate_repair_prompt, SYSTEM_INSTRUCTION_REPAIR
+from app.utils.config import GEMINI_CLIENT, Config
+from app.prompts.repair_prompt import generate_repair_prompt, SYSTEM_INSTRUCTION_REPAIR
 import re
 
 
