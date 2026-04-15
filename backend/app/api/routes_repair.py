@@ -12,9 +12,8 @@ async def fix_code(request: RepairRequest):
     API Endpoint: Nhận mã nguồn gốc và danh sách lỗi, trả về mã nguồn đã sửa.
     """
     try:
-        # Giao việc cho Service Layer. 
-        # (Giả định mặc định là python, nếu muốn bạn có thể thêm 'language' vào schema RepairRequest)
-        result = process_code_repair(request.source_code, request.review_issues, language="python")
+        # THÊM 'await' Ở DÒNG NÀY:
+        result = await process_code_repair(request.source_code, request.review_issues, language="python")
         
         if result.get("status") == "error":
             raise HTTPException(status_code=500, detail=result.get("explanation"))

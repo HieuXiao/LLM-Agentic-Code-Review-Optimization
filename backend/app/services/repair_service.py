@@ -5,8 +5,8 @@ from app.agents.agent_repair import RepairAgent
 
 logger = logging.getLogger(__name__)
 
-def process_code_repair(source_code: str, review_issues: list, language: str) -> dict:
-    """Service xử lý Sửa lỗi mã (Repair) dựa trên kết quả Review."""
+async def process_code_repair(source_code: str, review_issues: list, language: str) -> dict:
+    logger.info("Bắt đầu tiến trình Repair Code...")
     try:
         if not review_issues:
             return {"status": "error", "repaired_code": "", "explanation": "Không có lỗi nào để sửa."}
@@ -16,9 +16,10 @@ def process_code_repair(source_code: str, review_issues: list, language: str) ->
         issue_desc = f"Issue: {first_issue.get('description')} at line {first_issue.get('line')}."
 
         agent = RepairAgent()
-        repaired_code = agent.repair(source_code, issue_desc, language)
+        repaired_code = await agent.repair(source_code, issue_desc, language)
         
         if repaired_code:
+            logger.info("Tạo code sửa lỗi thành công.")
             return {
                 "status": "success",
                 "repaired_code": repaired_code,

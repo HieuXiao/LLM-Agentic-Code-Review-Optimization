@@ -5,12 +5,13 @@ from app.agents.agent_review import ReviewAgent
 
 logger = logging.getLogger(__name__)
 
-def process_code_review(source_code: str, language: str) -> dict:
-    """Service xử lý Phân tích mã (Review)."""
+async def process_code_review(source_code: str, language: str) -> dict:
+    logger.info(f"Bắt đầu Review Code (Ngôn ngữ: {language})...")
     try:
         agent = ReviewAgent()
-        review_results = agent.review(source_code, language)
+        review_results = await agent.review(source_code, language)
         
+        logger.info(f"Review hoàn tất. Phát hiện {len(review_results)} lỗi.")
         return {
             "status": "success",
             "issues_found": len(review_results) if isinstance(review_results, list) else 0,

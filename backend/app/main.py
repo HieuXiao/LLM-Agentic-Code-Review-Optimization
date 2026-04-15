@@ -5,6 +5,10 @@ from fastapi.middleware.cors import CORSMiddleware
 
 # --- THÊM 2 DÒNG IMPORT NÀY ---
 from app.api import routes_review, routes_repair
+from app.core.logging_config import setup_logging
+
+# Kích hoạt logging ngay khi server khởi động
+setup_logging()
 
 app = FastAPI(
     title="LLM Code Review API",

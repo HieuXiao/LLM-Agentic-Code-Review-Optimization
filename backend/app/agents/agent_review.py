@@ -11,18 +11,18 @@ class ReviewAgent:
         self.client = GEMINI_CLIENT
         self.model = Config.REVIEW_MODEL
 
-    def review(self, code_snippet: str, language: str) -> list:
+    async def review(self, code_snippet: str, language: str) -> list:
         """Perform source code review and return JSON results."""
         prompt = generate_review_prompt(code_snippet, language)
 
         try:
-            response = self.client.models.generate_content(
+            response = await self.client.aio.models.generate_content(
                 model=self.model,
                 contents=prompt,
                 config=types.GenerateContentConfig(
                     system_instruction=SYSTEM_INSTRUCTION_REVIEW,
                     temperature=Config.REVIEW_TEMPERATURE,
-                    response_mime_type="application/json", # Request JSON output
+                    response_mime_type="application/json",
                     response_schema={
                         "type": "array",
                         "items": {
@@ -39,7 +39,7 @@ class ReviewAgent:
                 )
             )
             return json.loads(response.text)
-
+        
         except Exception as e:
             print(f"Lỗi khi gọi Review Agent: {e}")
             return []
