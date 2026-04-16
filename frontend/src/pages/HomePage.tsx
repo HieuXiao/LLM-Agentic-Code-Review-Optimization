@@ -1,8 +1,15 @@
 // frontend/src/pages/HomePage.tsx
+
 import React, { useState } from 'react';
-import { Play, AlertTriangle, CheckCircle, Code } from 'lucide-react';
-import { reviewCode, repairCode } from '../services/api.service';
+import { Play, CheckCircle, Code } from 'lucide-react';
+// Đã thay đổi: Import streamRepairCode thay vì repairCode
+import { reviewCode, streamRepairCode } from '../services/api.service';
 import type { Issue } from '../types/api.types';
+
+// Import thư viện Toast và Highlight Code
+import toast, { Toaster } from 'react-hot-toast';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 export const HomePage: React.FC = () => {
   const [sourceCode, setSourceCode] = useState<string>('');
@@ -11,35 +18,46 @@ export const HomePage: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [issues, setIssues] = useState<Issue[]>([]);
   const [repairedCode, setRepairedCode] = useState<string>('');
-  const [error, setError] = useState<string | null>(null);
 
   const handleRunAgent = async () => {
     if (!sourceCode.trim()) {
-      setError("Vui lòng nhập mã nguồn trước khi chạy AI!");
+      toast.error("Vui lòng nhập mã nguồn trước khi chạy AI!");
       return;
     }
 
     setLoading(true);
-    setError(null);
     setIssues([]);
     setRepairedCode('');
+    
+    // Bật thông báo Toast đang xử lý
+    const toastId = toast.loading('AI đang phân tích mã nguồn...');
 
     try {
-      // Bước 1: Gọi API Review
       const reviewData = await reviewCode(sourceCode, language);
       setIssues(reviewData.review_result || []);
 
-      // Bước 2: Nếu có lỗi, tự động gọi API Repair
       if (reviewData.issues_found > 0 && reviewData.review_result) {
-        const repairData = await repairCode(sourceCode, reviewData.review_result, language);
-        if (repairData.status === 'success') {
-          setRepairedCode(repairData.repaired_code);
-        } else {
-          setError(repairData.explanation || "Không thể tạo bản sửa lỗi.");
-        }
+        toast.loading('Phát hiện lỗi! AI đang bắt đầu gõ mã sửa chữa...', { id: toastId });
+        
+        // Gọi API Stream và cập nhật UI liên tục
+        await streamRepairCode(
+          sourceCode, 
+          reviewData.review_result, 
+          language, 
+          (chunk) => {
+            // Cộng dồn từng đoạn code mới trả về vào state
+            setRepairedCode(prev => prev + chunk);
+          }
+        );
+        
+        toast.success('Đã hoàn tất phân tích và sửa lỗi!', { id: toastId });
+      } else {
+        toast.success('Code của bạn rất tuyệt, không tìm thấy lỗi nào!', { id: toastId });
       }
     } catch (err: any) {
-      setError(err.response?.data?.detail || "Đã xảy ra lỗi khi kết nối với máy chủ.");
+      // Bắt lỗi chung cho cả Review và Stream Repair
+      const errorMsg = err.response?.data?.detail || err.message || "Đã xảy ra lỗi khi kết nối với máy chủ.";
+      toast.error(errorMsg, { id: toastId });
     } finally {
       setLoading(false);
     }
@@ -47,7 +65,9 @@ export const HomePage: React.FC = () => {
 
   return (
     <div style={{ display: 'flex', height: '100vh', backgroundColor: '#0d1117', color: '#c9d1d9', fontFamily: 'sans-serif' }}>
-      
+      {/* Component chứa các Pop-up thông báo */}
+      <Toaster position="top-right" toastOptions={{ style: { background: '#161b22', color: '#c9d1d9', border: '1px solid #30363d' } }} />
+
       {/* KHUNG BÊN TRÁI: CODE INPUT */}
       <div style={{ flex: 1, padding: '20px', borderRight: '1px solid #30363d', display: 'flex', flexDirection: 'column' }}>
         <h2 style={{ color: '#58a6ff', display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -93,15 +113,8 @@ export const HomePage: React.FC = () => {
             fontSize: '16px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px', width: 'fit-content', marginBottom: '20px'
           }}
         >
-          {loading ? '⏳ AI đang phân tích...' : <><Play size={18} /> Run Review & Repair Agent</>}
+          {loading ? '⏳ Xin chờ...' : <><Play size={18} /> Run Review & Repair Agent</>}
         </button>
-
-        {error && (
-          <div style={{ padding: '15px', backgroundColor: 'rgba(248, 81, 73, 0.1)', borderLeft: '4px solid #f85149', color: '#ff7b72', marginBottom: '20px' }}>
-            <AlertTriangle size={18} style={{ display: 'inline', marginRight: '8px', verticalAlign: 'middle' }}/>
-            {error}
-          </div>
-        )}
 
         {/* HIỂN THỊ DANH SÁCH LỖI */}
         {issues.length > 0 && (
@@ -113,9 +126,7 @@ export const HomePage: React.FC = () => {
                   <strong style={{ color: issue.severity === 'Critical' ? '#f85149' : '#e3b341' }}>
                     {index + 1}. {issue.issue_type}
                   </strong>
-                  <span style={{ fontSize: '12px', padding: '2px 8px', borderRadius: '10px', backgroundColor: '#21262d' }}>
-                    Dòng {issue.line}
-                  </span>
+                  <span style={{ fontSize: '12px', padding: '2px 8px', borderRadius: '10px', backgroundColor: '#21262d' }}>Dòng {issue.line}</span>
                 </div>
                 <code style={{ display: 'block', backgroundColor: '#0d1117', padding: '8px', borderRadius: '4px', marginBottom: '8px', color: '#ff7b72' }}>
                   {issue.context}
@@ -126,22 +137,23 @@ export const HomePage: React.FC = () => {
           </div>
         )}
 
-        {/* HIỂN THỊ CODE ĐÃ SỬA */}
+        {/* HIỂN THỊ CODE ĐÃ SỬA VỚI SYNTAX HIGHLIGHTING */}
         {repairedCode && (
           <div>
             <h3 style={{ borderBottom: '1px solid #30363d', paddingBottom: '10px', color: '#3fb950', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <CheckCircle size={20} /> Repaired Code
             </h3>
-            <pre style={{ padding: '15px', borderRadius: '8px', backgroundColor: '#010409', border: '1px solid #30363d', overflowX: 'auto', color: '#e6edf3' }}>
-              <code>{repairedCode}</code>
-            </pre>
+            <div style={{ borderRadius: '8px', overflow: 'hidden', border: '1px solid #30363d' }}>
+              <SyntaxHighlighter 
+                language={language} 
+                style={vscDarkPlus}
+                customStyle={{ margin: 0, padding: '15px', fontSize: '14px' }}
+              >
+                {repairedCode}
+              </SyntaxHighlighter>
+            </div>
           </div>
         )}
-        
-        {!loading && issues.length === 0 && !error && (
-           <p style={{ color: '#8b949e', fontStyle: 'italic' }}>Hãy nhập code và bấm chạy AI để xem kết quả.</p>
-        )}
-
       </div>
     </div>
   );

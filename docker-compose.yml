@@ -1,0 +1,18 @@
+# docker-compose.yml
+
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./backend/.env  # Đảm bảo file .env chứa GEMINI_API_KEY ở đây
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "5173:80" # Map port 80 của Nginx ra 5173 của máy host để giữ nguyên URL cũ
+    depends_on:
+      - backend
+    restart: unless-stopped
