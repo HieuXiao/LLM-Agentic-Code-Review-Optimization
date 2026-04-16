@@ -1,3 +1,5 @@
+// services/api.service.ts
+
 import axios from 'axios';
 import type { ReviewResponse, RepairResponse, Issue } from '../types/api.types';
 
@@ -29,3 +31,48 @@ export const repairCode = async (sourceCode: string, reviewIssues: Issue[], lang
       throw error;
     }
 };
+
+export const streamRepairCode = async (
+    sourceCode: string, 
+    reviewIssues: Issue[], 
+    language: string = 'python',
+    onChunk: (text: string) => void
+  ): Promise<void> => {
+    const response = await fetch(`${API_URL}/repair/stream`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'text/event-stream',
+      },
+      body: JSON.stringify({
+        source_code: sourceCode,
+        review_issues: reviewIssues,
+        language: language
+      }),
+    });
+  
+    if (!response.body) throw new Error("Trình duyệt không hỗ trợ luồng dữ liệu (ReadableStream).");
+  
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder("utf-8");
+  
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+  
+      const chunk = decoder.decode(value, { stream: true });
+      const lines = chunk.split('\n\n'); // Tách các event SSE
+      
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          let data = line.replace('data: ', '');
+          if (data.startsWith('[ERROR]')) {
+              throw new Error(data.replace('[ERROR] ', ''));
+          }
+          // Khôi phục lại dấu xuống dòng
+          data = data.replace(/\\n/g, '\n');
+          onChunk(data);
+        }
+      }
+    }
+  };

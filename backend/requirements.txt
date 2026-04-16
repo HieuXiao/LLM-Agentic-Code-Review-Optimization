@@ -5,7 +5,8 @@ pydantic>=2.0.0
 pydantic-settings>=2.0.0
 
 # --- AI & Environment ---
-google-adk>=0.1.0
+google-generativeai
+google-genai
 python-dotenv>=1.0.0
 
 # --- Utils ---
